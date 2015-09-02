@@ -72,6 +72,9 @@
 /// Disable image sharing - Default is NO
 @property(assign, nonatomic, getter = isSharingDisabled) BOOL sharingDisabled;
 
+/// Disable Barbuttons - Default is NO
+@property(assign, nonatomic, getter = isBarButtonDisabled) BOOL barButtonDisabled;
+
 /// Override rotation of images - Default is YES
 @property(assign, nonatomic, getter = isRotationEnabled) BOOL rotationEnabled;
 
