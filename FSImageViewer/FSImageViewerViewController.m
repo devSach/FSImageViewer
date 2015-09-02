@@ -24,6 +24,9 @@
 
 #import "FSImageViewerViewController.h"
 #import "FSImageTitleView.h"
+#import "UINavigationItem+Margin.h"
+
+#define SCREEN_BOUND [UIScreen mainScreen].bounds
 
 @interface FSImageViewerViewController ()
 
@@ -35,7 +38,9 @@
     BOOL rotating;
     BOOL barsHidden;
     BOOL statusBarHidden;
-    UIBarButtonItem *shareButton;
+//    UIBarButtonItem *shareButton;
+
+    UIButton *shareButton;
 }
 
 - (id)initWithImageSource:(id <FSImageSource>)aImageSource {
@@ -51,10 +56,13 @@
         self.hidesBottomBarWhenPushed = YES;
                 
         self.backgroundColorHidden = [UIColor blackColor];
-        self.backgroundColorVisible = [UIColor whiteColor];
+// Set self.backgroundColorVisible = [UIColor whiteColor]; to display White Color as Default.
+        self.backgroundColorVisible = [UIColor blackColor];
         
         self.progressColorHidden = [UIColor whiteColor];
-        self.progressColorVisible = [UIColor darkGrayColor];
+//        self.progressColorVisible = [UIColor darkGrayColor];
+        self.progressColorVisible = [UIColor whiteColor];
+
 
         _imageSource = aImageSource;
         pageIndex = imageIndex;
@@ -83,7 +91,8 @@
     self.view.backgroundColor = self.backgroundColorVisible;
 
     if (!_scrollView) {
-        self.scrollView = [[UIScrollView alloc] initWithFrame:self.view.bounds];
+     //   self.scrollView = [[UIScrollView alloc] initWithFrame:self.view.bounds];
+        self.scrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(0,50, self.view.frame.size.width, self.view.frame.size.height-105)];
         _scrollView.delegate = self;
         _scrollView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
         _scrollView.scrollEnabled = YES;
@@ -97,7 +106,7 @@
         _scrollView.pagingEnabled = YES;
         _scrollView.showsVerticalScrollIndicator = NO;
         _scrollView.showsHorizontalScrollIndicator = NO;
-        _scrollView.backgroundColor = self.view.backgroundColor;
+    //    _scrollView.backgroundColor = self.view.backgroundColor;
         [self.view addSubview:_scrollView];
     }
 
@@ -111,6 +120,10 @@
         [views addObject:[NSNull null]];
     }
     self.imageViews = views;
+    if (!_barButtonDisabled)
+    {
+        [self setupRightBarbuttons];
+    }
 }
 
 - (void)setTitleView:(UIView<FSTitleView> *)titleView {
@@ -126,18 +139,30 @@
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
 
-    shareButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(share:)];
-    shareButton.enabled = NO;
+ //   shareButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(share:)];
+//    shareButton.enabled = NO;
+    
+    shareButton = [[UIButton alloc]initWithFrame:CGRectMake((SCREEN_BOUND.size.width-110), (SCREEN_BOUND.size.height-50), 100, 50)];
+    [shareButton addTarget:self action:@selector(share:) forControlEvents:UIControlEventTouchUpInside];
+    [shareButton setBackgroundImage:[UIImage imageNamed:@"share"] forState:UIControlStateNormal];
+//    [self.view addSubview:shareButton];
+    
     if (self.presentingViewController && (self.modalPresentationStyle == UIModalPresentationFullScreen)) {
-        UIBarButtonItem *doneButton = [[UIBarButtonItem alloc] initWithTitle:[self localizedStringForKey:@"done" withDefault:@"Done"] style:UIBarButtonItemStyleDone target:self action:@selector(done:)];
-        self.navigationItem.rightBarButtonItem = doneButton;
+        UIBarButtonItem *doneButton = [[UIBarButtonItem alloc] initWithTitle:@"Back" style:UIBarButtonItemStyleDone target:self action:@selector(done:)];
+        self.navigationItem.leftBarButtonItem = doneButton;
+        doneButton.tintColor = [UIColor blackColor];
+//         self.navigationItem.leftBarButtonItem .tintColor = [UIColor blackColor];
         if (!_sharingDisabled) {
-            self.navigationItem.leftBarButtonItem = shareButton;
+//            self.navigationItem.leftBarButtonItem = shareButton;
+            [self.view addSubview:shareButton];
+             shareButton.tintColor = [UIColor blackColor];
         }
     }
     else {
         if (!_sharingDisabled) {
-            self.navigationItem.rightBarButtonItem = shareButton;
+            [self.view addSubview:shareButton];
+//            self.navigationItem.rightBarButtonItem = shareButton;
+           
         }
     }
 
@@ -213,7 +238,7 @@
         UIActivityViewController *controller = [[UIActivityViewController alloc] initWithActivityItems:@[currentImage.image] applicationActivities:_applicationActivities];
         if([controller respondsToSelector:@selector(popoverPresentationController)]) {
             if (!controller.popoverPresentationController.barButtonItem) {
-                controller.popoverPresentationController.barButtonItem = shareButton;
+//                controller.popoverPresentationController.barButtonItem = shareButton;
             }
         }
         [self presentViewController:controller animated:YES completion:nil];
@@ -309,7 +334,8 @@
     if(_showNumberOfItemsInTitle) {
         NSInteger numberOfImages = [_imageSource numberOfImages];
         if (numberOfImages > 1) {
-            self.navigationItem.title = [NSString stringWithFormat:@"%i %@ %li", (int)pageIndex + 1, [self localizedStringForKey:@"imageCounter" withDefault:@"of"], (long)numberOfImages];
+            self.navigationController.navigationBar.titleTextAttributes = @{NSForegroundColorAttributeName: [UIColor blackColor]};
+            self.navigationItem.title = [NSString stringWithFormat:@"%i of %li", (int)pageIndex + 1, (long)numberOfImages];
         } else {
             self.title = @"";
         }
@@ -541,6 +567,112 @@
         }
     defaultString = [bundle localizedStringForKey:key value:defaultString table:nil];
     return [[NSBundle bundleForClass:[self class]] localizedStringForKey:key value:defaultString table:nil];
+}
+
+- (void)setupRightBarbuttons {
+    
+    NSMutableArray *rightBarButtons = [[NSMutableArray alloc] init];
+    
+    UIButton *nButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [nButton setFrame:CGRectMake(0, 0, 25, 30)];
+    [nButton addTarget:self action:@selector(showParentNotificationView:) forControlEvents:UIControlEventTouchUpInside];
+    [nButton setImage:[UIImage imageNamed:@"notification"] forState:UIControlStateNormal];
+    UIBarButtonItem *notificationButton = [[UIBarButtonItem alloc] initWithCustomView:nButton];
+    
+    UIButton *calButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [calButton setFrame:CGRectMake(0, 0, 25, 30)];
+    [calButton addTarget:self action:@selector(showCalendarView:) forControlEvents:UIControlEventTouchUpInside];
+    [calButton setImage:[UIImage imageNamed:@"barCalendar"] forState:UIControlStateNormal];
+    UIBarButtonItem *calendarButton = [[UIBarButtonItem alloc] initWithCustomView:calButton];
+    
+    UIButton *bButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [bButton setFrame:CGRectMake(0, 0, 25, 30)];
+    [bButton addTarget:self action:@selector(showBagPackView:) forControlEvents:UIControlEventTouchUpInside];
+    [bButton setImage:[UIImage imageNamed:@"bag"] forState:UIControlStateNormal];
+    UIBarButtonItem *bagPackButton = [[UIBarButtonItem alloc] initWithCustomView:bButton];
+    
+    UIButton *cButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [cButton setFrame:CGRectMake(0, 0, 25, 30)];
+    [cButton addTarget:self action:@selector(showChatView:) forControlEvents:UIControlEventTouchUpInside];
+    [cButton setImage:[UIImage imageNamed:@"msg"] forState:UIControlStateNormal];
+    UIBarButtonItem *chatbutton = [[UIBarButtonItem alloc] initWithCustomView:cButton];
+    
+    //    UIBarButtonItem *space = [[UIBarButtonItem alloc]initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:self action:nil];
+    //    space.width = 10;
+    
+    [rightBarButtons addObject:notificationButton];
+    [rightBarButtons addObject:calendarButton];
+    [rightBarButtons addObject:bagPackButton];
+    [rightBarButtons addObject:chatbutton];
+    
+    self.navigationItem.rightBarButtonItems = rightBarButtons;
+    self.navigationItem.rightMargin = 5;
+}
+
+// Show Parent Notifications.
+- (void)showParentNotificationView:(id)sender {
+    
+    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+        // iPad MainiPad
+        UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"MainiPad" bundle:nil];
+        UINavigationController *navVC = [storyboard instantiateViewControllerWithIdentifier:@"parentNotificationNavVC"];
+        [self presentViewController:navVC animated:YES completion:nil];
+    } else {
+        // iPhone
+        UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
+        UINavigationController *navVC = [storyboard instantiateViewControllerWithIdentifier:@"parentNotificationNavVC"];
+        [self presentViewController:navVC animated:YES completion:nil];
+    }
+}
+
+// Show Chat View.
+- (void)showChatView:(id)sender {
+    
+    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+        // iPad
+        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:@"Coming soon..." message:nil delegate:nil cancelButtonTitle:@"ok" otherButtonTitles:nil, nil];
+        [alert show];
+    } else {
+        // iPhone
+        /*     UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
+         UINavigationController *navVC = [storyboard instantiateViewControllerWithIdentifier:@"chatNavVC"];
+         [self presentViewController:navVC animated:YES completion:nil];*/
+        UIAlertView *alert = [[UIAlertView alloc]initWithTitle:@"Coming soon..." message:nil delegate:nil cancelButtonTitle:@"ok" otherButtonTitles:nil, nil];
+        [alert show];
+    }
+}
+
+// Show Backpack.
+- (void)showBagPackView:(id)sender {
+    
+    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+        // iPad. MainiPad
+        UIStoryboard *storyBoard = [UIStoryboard storyboardWithName:@"MainiPad" bundle:nil];
+        UINavigationController *navVC = [storyBoard instantiateViewControllerWithIdentifier:@"bagPackNavVC"];
+        [self presentViewController:navVC animated:YES completion:nil];
+        
+    } else {
+        // iPhone.
+        UIStoryboard *storyBoard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
+        UINavigationController *navVC = [storyBoard instantiateViewControllerWithIdentifier:@"bagPackNavVC"];
+        [self presentViewController:navVC animated:YES completion:nil];
+    }
+}
+
+// Show Calendar View.
+- (void)showCalendarView:(id)sender {
+    
+    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+        // iPad MainiPad
+        UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"MainiPad" bundle:nil];
+        UINavigationController *navVC = [storyboard instantiateViewControllerWithIdentifier:@"calendarNavVC"];
+        [self presentViewController:navVC animated:YES completion:nil];
+    } else {
+        // iPhone
+        UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
+        UINavigationController *navVC = [storyboard instantiateViewControllerWithIdentifier:@"calendarNavVC"];
+        [self presentViewController:navVC animated:YES completion:nil];
+    }
 }
 
 @end
